@@ -1,0 +1,39 @@
+version: "3.9"
+services:
+  fastapi-server:
+    image: fastapi-server:latest
+    volumes:
+      - data_volume:/app/data
+      - ./chroma:/app/chroma
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"
+    environment:
+      - DATA_PATH=/app/data
+      - CHROMA_PATH=/app/chroma
+      - OLLAMA_BASE_URL=http://ollama-server:11434
+      - PYTHON_PATH=python
+    depends_on:
+      - ollama-server
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import http.client; conn = http.client.HTTPConnection('localhost', 8000); conn.request('HEAD', '/health'); exit(0) if conn.getresponse().status == 200 else exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+
+  ollama-server:
+    image: ollama-server:latest
+    ports:
+      - "11434:11434"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  data_volume:
