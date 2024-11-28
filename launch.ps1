@@ -10,6 +10,7 @@ $OllamaImageName = "ollama-server:latest"
 $FastApiImageTar = "docker/fastapi-server.tar"
 $OllamaImageTar = "docker/ollama-server.tar"
 $DockerDirectory = "docker"
+$DataDirectory = "data"
 
 
 if (-not (Test-Path $DockerDirectory)) {
@@ -25,6 +26,19 @@ if (-not (Test-Path $DockerDirectory)) {
     Write-Output "$DockerDirectory directory already exists."
 }
 
+
+if (-not (Test-Path $DataDirectory)) {
+    Write-Output "Creating $DataDirectory directory..."
+    try {
+        New-Item -ItemType Directory -Path $DataDirectory | Out-Null
+        Write-Output "$DataDirectory directory created successfully."
+    } catch {
+        Write-Error "Error: Failed to create $DataDirectory directory. Exception: $_"
+        exit 1
+    }
+} else {
+    Write-Output "$DataDirectory directory already exists."
+}
 
 Write-Output "Service: $Service"
 Write-Output "Mode: $Mode"
@@ -149,7 +163,6 @@ function ComposeService {
     }
     Write-Output "Successfully started service(s) with Docker Compose."
 }
-
 
 if (-not (CommandExists "docker")) {
     Write-Error "Error: Docker is not installed or not in PATH."

@@ -1,10 +1,6 @@
-pypdf
-langchain
-chromadb
-pytest
-boto3
-langchain_community
-langchain-chroma
-langchain-ollama
-watchdog
-python-multipart
+langchain-chroma==0.1.4
+watchdog==6.0.0
+langchain-ollama==0.2.0
+langchain-community==0.3.8
+pypdf==5.1.0
+python-multipart==0.0.17

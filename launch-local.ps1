@@ -1,27 +1,47 @@
-# launch-local.ps1
-
-# Configuration
 $ConfigFile = "config.json"
 $VenvPath = "venv"
 $RequirementsFile = "requirements.txt"
 $WatcherScript = "src/watcher.py"
+$DataFolder = "data"
 
-# Function to check if a command exists
+
 function CommandExists {
     param([string]$Command)
     $null -ne (Get-Command $Command -ErrorAction SilentlyContinue)
 }
 
-# Function to check if a Python virtual environment exists
-function VerifyPythonEnvironment {
-    if (-not (Test-Path $VenvPath)) {
-        Write-Error "Error: Python virtual environment not found at $VenvPath."
-        exit 1
+
+function EnsureFolder {
+    param([string]$FolderPath, [string]$FolderDescription)
+    Write-Output "Ensuring $FolderDescription exists at $FolderPath..."
+    if (-not (Test-Path $FolderPath)) {
+        New-Item -ItemType Directory -Path $FolderPath | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Error: Failed to create $FolderDescription at $FolderPath."
+            exit 1
+        }
+        Write-Output "$FolderDescription created successfully."
+    } else {
+        Write-Output "$FolderDescription already exists at $FolderPath."
     }
-    Write-Output "Python virtual environment found at $VenvPath."
 }
 
-# Function to check if a file exists
+
+function EnsurePythonEnvironment {
+    if (-not (Test-Path $VenvPath)) {
+        Write-Output "Virtual environment not found. Creating a new one at $VenvPath..."
+        & python -m venv $VenvPath
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Error: Failed to create Python virtual environment."
+            exit 1
+        }
+        Write-Output "Virtual environment created successfully."
+    } else {
+        Write-Output "Python virtual environment already exists at $VenvPath."
+    }
+}
+
+
 function VerifyFile {
     param (
         [string]$FilePath,
@@ -35,7 +55,10 @@ function VerifyFile {
     Write-Output "$FileDescription found."
 }
 
-# Step 1: Check if Ollama is installed
+
+EnsureFolder -FolderPath $DataFolder -FolderDescription "data folder"
+
+
 Write-Output "Checking if Ollama is installed..."
 if (-not (CommandExists "ollama")) {
     Write-Error "Error: Ollama is not installed or not in PATH."
@@ -43,7 +66,7 @@ if (-not (CommandExists "ollama")) {
 }
 Write-Output "Ollama is installed."
 
-# Step 2: Check if models exist in Ollama
+
 Write-Output "Checking models in Ollama..."
 if (-not (Test-Path $ConfigFile)) {
     Write-Error "Error: Configuration file $ConfigFile not found."
@@ -59,7 +82,6 @@ if (-not $EmbeddingModel -or -not $LlamaModel) {
     exit 1
 }
 
-# Fetch and parse Ollama models
 $OllamaList = ollama list | Select-String -Pattern "^(.*?)\s+.*$" | ForEach-Object { ($_ -split '\s+')[0] -replace ":[^:]+$", "" }
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Error: Failed to fetch Ollama models."
@@ -77,13 +99,14 @@ if ($OllamaList -notcontains $LlamaModel) {
 }
 Write-Output "Required models are available in Ollama."
 
-# Step 3: Verify Python environment
-Write-Output "Checking Python virtual environment..."
-VerifyPythonEnvironment
 
-# Step 4: Install dependencies
+Write-Output "Ensuring Python virtual environment..."
+EnsurePythonEnvironment
+
+
 Write-Output "Installing dependencies..."
 VerifyFile -FilePath $RequirementsFile -FileDescription "Requirements file"
+& "$VenvPath\Scripts\python.exe" -m pip install --upgrade pip
 & "$VenvPath\Scripts\python.exe" -m pip install -r $RequirementsFile
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Error: Failed to install Python dependencies."
@@ -91,7 +114,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Output "Dependencies installed successfully."
 
-# Step 5: Run the watcher script
+
 Write-Output "Starting the watcher script..."
 VerifyFile -FilePath $WatcherScript -FileDescription "Watcher script"
 & "$VenvPath\Scripts\python.exe" $WatcherScript
