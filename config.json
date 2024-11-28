@@ -1,0 +1,12 @@
+{
+    "data_path": "data",
+    "chroma_path": "chroma",
+    "log_file": "./logs/query_log.json",
+    "ollama_base_url": "http://localhost:11434",
+    "models": {
+      "embedding_model": "mxbai-embed-large",
+      "llama_model": "llama3.2"
+    },
+    "python_path":"./venv/Scripts/python.exe"
+  }
+  
